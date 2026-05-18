@@ -1,0 +1,51 @@
+# ====================================================================
+# 数据、权重与实验结果过滤 (Data, Checkpoints & Outputs)
+# ====================================================================
+# 忽略所有层级下的 data 文件夹（如根目录下的 data/ 和 train/data/）
+**/data/
+
+# 忽略训练模型权重与检查点
+**/checkpoints/
+
+# 忽略各种本地数据库、日志、输出与实验结果
+lancedb_data/
+logs/
+outputs/
+results/
+**/results/
+figures/
+teaser_b/
+
+# ====================================================================
+# Python 编译文件与缓存缓存 (Python Build & Caches)
+# ====================================================================
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境 (Virtual Environments)
+.venv/
+venv/
+env/
+ENV/
+
+# ====================================================================
+# 操作系统与 IDE 缓存 (OS & IDE Caches)
+# ====================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs (VS Code, PyCharm 等)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
