@@ -3,7 +3,7 @@
 # ── LLM 配置 ──────────────────────────────────────────────
 OPENAI_API_KEY = "EMPTY"                          # vLLM 默认不校验,填 EMPTY 或任意字符串
 OPENAI_BASE_URL = "http://localhost:11434/v1"
-LLM_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+LLM_MODEL = "Qwen/Qwen2.5-3B-Instruct"
 
 # ── Embedding 配置 ─────────────────────────────────────────
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
@@ -41,7 +41,7 @@ MEMORY_TABLE_NAME = "memory_entries"
 # 如果想用不同模型,需要起第二个 vLLM 实例(不同端口)
 JUDGE_API_KEY = "EMPTY"
 JUDGE_BASE_URL  = "http://localhost:11434/v1"
-JUDGE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
+JUDGE_MODEL = "Qwen/Qwen2.5-3B-Instruct"
 JUDGE_ENABLE_THINKING = False
 JUDGE_USE_STREAMING = False
 JUDGE_TEMPERATURE = 0.3

@@ -26,8 +26,6 @@ class SimpleMemSystem:
         base_url: Optional[str] = None,
         enable_thinking: Optional[bool] = None,
         use_streaming: Optional[bool] = None,
-        # Embedding (Phase-2 contrastive checkpoint can be swapped in here)
-        embedding_model_name: Optional[str] = None,
         # DB
         db_path: Optional[str] = None,
         table_name: Optional[str] = None,
@@ -53,7 +51,7 @@ class SimpleMemSystem:
             enable_thinking=enable_thinking,
             use_streaming=use_streaming,
         )
-        self.embedding_model = EmbeddingModel(model_name=embedding_model_name)
+        self.embedding_model = EmbeddingModel()
         self.vector_store = VectorStore(
             db_path=db_path,
             embedding_model=self.embedding_model,

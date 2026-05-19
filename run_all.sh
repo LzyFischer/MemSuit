@@ -37,7 +37,7 @@
 set -euo pipefail
 
 # ---------- knobs you might want to change ----------
-BASE_LLM="meta-llama/Llama-3.1-8B-Instruct"
+BASE_LLM="Qwen/Qwen2.5-3B-Instruct"
 BASE_EMB="sentence-transformers/all-MiniLM-L6-v2"
 DATASET="data/locomo10.json"
 WINDOW_SIZE=20
@@ -45,22 +45,22 @@ SPLIT_COUNTS=(152 81 1307)
 
 VLLM_PORT=11434
 VLLM_MODEL_NAME_BASE="${BASE_LLM}"               # served-model-name for baseline
-# VLLM_MODEL_NAME_DISTILL="qwen25-3b-distill"      # served-model-name for distilled
-VLLM_MODEL_NAME_DISTILL="llama31-8b-distill"      # served-model-name for distilled
+VLLM_MODEL_NAME_DISTILL="qwen25-3b-distill"      # served-model-name for distilled
+# VLLM_MODEL_NAME_DISTILL="llama31-8b-distill"      # served-model-name for distilled
 VLLM_GPU_UTIL=0.85
 VLLM_MAX_MODEL_LEN=8192
 VLLM_STARTUP_TIMEOUT=600                         # seconds to wait for /v1/models
 
-DISTILL_CKPT_DIR="train/checkpoints/llama31-8b-distill"
-DISTILL_MERGED_DIR="train/checkpoints/llama31-8b-distill-merged"
-EMBED_CKPT_DIR="train/checkpoints/embed-contrastive"
+DISTILL_CKPT_DIR="train/checkpoints/qwen25-3b-distill"
+DISTILL_MERGED_DIR="train/checkpoints/qwen25-3b-distill-merged"
+EMBED_CKPT_DIR="train/checkpoints/qwen25-embed-contrastive"
 
 EVAL_PARALLEL_WORKERS=4
-EVAL_LLM_JUDGE=1                                  # set to 0 to skip judge (faster)
+EVAL_LLM_JUDGE=0                                  # set to 0 to skip judge (faster)
 # ----------------------------------------------------
 
-# STAGE="${1:-all}"
-STAGE="train"
+STAGE="${1:-all}"
+# STAGE="train"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
@@ -267,38 +267,38 @@ stage_train() {
         2>&1 | tee "$LOG_DIR/sft.log"
     ok "LoRA adapter saved to $DISTILL_CKPT_DIR"
 
-#     # ---- Phase 1: merge LoRA into base for vLLM serving ----
-#     log "Step 2/3: merge LoRA → standalone HF model for vLLM"
-#     python - <<PY 2>&1 | tee "$LOG_DIR/merge.log"
-# from transformers import AutoModelForCausalLM, AutoTokenizer
-# from peft import PeftModel
-# import torch
+    # ---- Phase 1: merge LoRA into base for vLLM serving ----
+    log "Step 2/3: merge LoRA → standalone HF model for vLLM"
+    python - <<PY 2>&1 | tee "$LOG_DIR/merge.log"
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+import torch
 
-# print("Loading base model in bf16 …")
-# base = AutoModelForCausalLM.from_pretrained(
-#     "${BASE_LLM}", torch_dtype=torch.bfloat16
-# )
-# print("Attaching LoRA adapter from ${DISTILL_CKPT_DIR} …")
-# m = PeftModel.from_pretrained(base, "${DISTILL_CKPT_DIR}")
-# print("Merging …")
-# merged = m.merge_and_unload()
-# merged.save_pretrained("${DISTILL_MERGED_DIR}")
-# AutoTokenizer.from_pretrained("${BASE_LLM}").save_pretrained("${DISTILL_MERGED_DIR}")
-# print("Merged model saved to ${DISTILL_MERGED_DIR}")
-# PY
-#     ok "merged model at $DISTILL_MERGED_DIR"
+print("Loading base model in bf16 …")
+base = AutoModelForCausalLM.from_pretrained(
+    "${BASE_LLM}", torch_dtype=torch.bfloat16
+)
+print("Attaching LoRA adapter from ${DISTILL_CKPT_DIR} …")
+m = PeftModel.from_pretrained(base, "${DISTILL_CKPT_DIR}")
+print("Merging …")
+merged = m.merge_and_unload()
+merged.save_pretrained("${DISTILL_MERGED_DIR}")
+AutoTokenizer.from_pretrained("${BASE_LLM}").save_pretrained("${DISTILL_MERGED_DIR}")
+print("Merged model saved to ${DISTILL_MERGED_DIR}")
+PY
+    ok "merged model at $DISTILL_MERGED_DIR"
 
-#     # ---- Phase 2: contrastive embedder ----
-#     log "Step 3/3: contrastive fine-tune the embedder"
-#     python train/train_contrastive.py \
-#         --pairs-file   train/data/contrastive_pairs.jsonl \
-#         --val-pairs    train/data/contrastive_pairs_val.jsonl \
-#         --base-model   "$BASE_EMB" \
-#         --output-dir   "$EMBED_CKPT_DIR" \
-#         --epochs 3 --batch-size 32 --lr 2e-5 --temperature 0.05 \
-#         --bf16 \
-#         2>&1 | tee "$LOG_DIR/contrastive.log"
-#     ok "fine-tuned embedder at $EMBED_CKPT_DIR"
+    # ---- Phase 2: contrastive embedder ----
+    log "Step 3/3: contrastive fine-tune the embedder"
+    python train/train_contrastive.py \
+        --pairs-file   train/data/contrastive_pairs.jsonl \
+        --val-pairs    train/data/contrastive_pairs_val.jsonl \
+        --base-model   "$BASE_EMB" \
+        --output-dir   "$EMBED_CKPT_DIR" \
+        --epochs 3 --batch-size 32 --lr 2e-5 --temperature 0.05 \
+        --bf16 \
+        2>&1 | tee "$LOG_DIR/contrastive.log"
+    ok "fine-tuned embedder at $EMBED_CKPT_DIR"
 
     ok "train stage done"
 }

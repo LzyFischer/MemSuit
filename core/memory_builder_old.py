@@ -28,22 +28,12 @@ class MemoryBuilder:
         window_size: Optional[int] = None,
         enable_parallel_processing: Optional[bool] = None,
         max_parallel_workers: Optional[int] = None,
-        overlap_size: Optional[int] = None,
-        single_entry_mode: bool = False,
     ):
         self.llm_client = llm_client
         self.vector_store = vector_store
         self.window_size = window_size or config.WINDOW_SIZE
-        self.overlap_size = (
-            overlap_size if overlap_size is not None
-            else getattr(config, "OVERLAP_SIZE", 0)
-        )
-        # Clamp overlap so step_size stays >= 1 (matters when window_size=1).
-        self.overlap_size = max(0, min(self.overlap_size, self.window_size - 1))
+        self.overlap_size = getattr(config, "OVERLAP_SIZE", 0)
         self.step_size = max(1, self.window_size - self.overlap_size)
-        # When True the extraction prompt asks for exactly ONE memory entry
-        # per window — used by the granularity ablation.
-        self.single_entry_mode = single_entry_mode
 
         self.enable_parallel_processing = (
             enable_parallel_processing
@@ -226,10 +216,6 @@ class MemoryBuilder:
             if not isinstance(text, str) or not text.strip():
                 continue
             entries.append(MemoryEntry(lossless_restatement=text.strip()))
-        # Safety net for the granularity ablation: if the LLM ignored the
-        # "exactly one entry" instruction we keep only the first.
-        if self.single_entry_mode and len(entries) > 1:
-            entries = entries[:1]
         return entries
 
     # ------------------------------------------------------------------
@@ -237,8 +223,6 @@ class MemoryBuilder:
     # ------------------------------------------------------------------
 
     def _extraction_prompt(self, dialogue_text: str, context: str) -> str:
-        if self.single_entry_mode:
-            return self._single_entry_prompt(dialogue_text, context)
         return f"""
 Your task is to extract all valuable information from the following dialogues and convert them into structured memory entries.
 
@@ -265,38 +249,4 @@ Return a JSON array. Each element is a memory entry with a single field:
 ```
 
 Now process the above dialogues. Return ONLY the JSON array, no other explanations.
-"""
-
-    def _single_entry_prompt(self, dialogue_text: str, context: str) -> str:
-        """
-        Granularity-ablation prompt: compress the entire window into ONE
-        memory entry. Same disambiguation rules as the default prompt; only
-        the entry-count requirement and the density emphasis differ.
-        """
-        return f"""
-Your task is to compress the following dialogues into a SINGLE memory entry that preserves every piece of information necessary to answer downstream questions.
-
-{context}
-
-[Current Window Dialogues]
-{dialogue_text}
-
-[Requirements]
-1. **Exactly ONE entry**: The output JSON array MUST contain exactly one element. Do not produce two, do not produce zero.
-2. **Maximum Information Density**: This single entry has to stand in for the entire window. Pack in every named entity, date, location, number, decision, and event that appears in the dialogue. Length is unrestricted — write a long, dense sentence (or several joined by semicolons) if needed.
-3. **Force Disambiguation**: Absolutely PROHIBIT using pronouns (he, she, it, they, this, that) and relative time (yesterday, today, last week, tomorrow). Use full names and absolute ISO 8601 timestamps inline.
-4. **Lossless Information**: The single lossless_restatement must be a self-contained, independently understandable text that includes all relevant subjects, objects, times, and locations inline.
-
-[Output Format]
-Return a JSON array with EXACTLY ONE element:
-
-```json
-[
-  {{
-    "lossless_restatement": "Complete, dense, unambiguous restatement that includes every fact from the window"
-  }}
-]
-```
-
-Now process the above dialogues. Return ONLY the JSON array (length 1), no other explanations.
 """
