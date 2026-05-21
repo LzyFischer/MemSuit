@@ -69,7 +69,7 @@ def apply_style():
         #   - xtick labels  = 11   (set explicitly per-axis below)
         #   - legend        = 11   (set on fig.legend below)
         # We keep the base at 12 so axis labels/titles inherit it.
-        "font.size": 12,
+        "font.size": 14,
     })
 
 
@@ -168,14 +168,14 @@ def plot_split_violin(ax, before: dict, after: dict, *,
         _half_and_style(parts_n, "right", NEG_COLOR)
 
         # Median markers per side.
-        for x, dp, dn in zip(positions, pos_data, neg_data):
-            ax.scatter([x - 0.06], [np.median(dp)], color="white",
-                       edgecolor=EDGE_COLOR, zorder=4, s=22, linewidths=1.1)
-            ax.scatter([x + 0.06], [np.median(dn)], color="white",
-                       edgecolor=EDGE_COLOR, zorder=4, s=22, linewidths=1.1)
+        # for x, dp, dn in zip(positions, pos_data, neg_data):
+        #     ax.scatter([x - 0.06], [np.median(dp)], color="white",
+        #                edgecolor=EDGE_COLOR, zorder=4, s=22, linewidths=1.1)
+        #     ax.scatter([x + 0.06], [np.median(dn)], color="white",
+        #                edgecolor=EDGE_COLOR, zorder=4, s=22, linewidths=1.1)
 
     ax.set_xticks(positions)
-    ax.set_xticklabels(["Before", "After"], fontsize=11)
+    ax.set_xticklabels(["Before", "After"], fontsize=14)
     ax.set_ylabel("Cosine similarity")
     ax.axhline(0, color="gray", lw=0.6, ls="--", alpha=0.5)
     ax.grid(True, axis="y", linestyle="--", color="gray", alpha=0.5)

@@ -49,3 +49,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
+
+*.png
+*.pdf
+*.log
