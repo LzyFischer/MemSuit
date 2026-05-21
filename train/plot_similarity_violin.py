@@ -137,8 +137,6 @@ def plot_split_violin(ax, before: dict, after: dict, *,
         # matplotlib's violinplot doesn't natively support split halves,
         # so we draw two violinplots and clip each set to one side via the
         # polygons' vertex x-coordinates.
-        if idx==0: 
-            after["neg"] = (before["neg"] * 2 + after["neg"]) / 3
         pos_data = [
             _subsample(before["pos"], max_points, seed=0),
             _subsample(after["pos"],  max_points, seed=1),
